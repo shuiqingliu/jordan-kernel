@@ -1236,6 +1236,19 @@ int mmc_power_save_host(struct mmc_host *host)
 
 	mmc_bus_get(host);
 
+
+	if (!host->bus_ops) {
+		printk("%s: !host->bus_ops\n",__func__);
+	}
+
+	if (!host->bus_ops->power_restore) {
+		printk("%s: !host->bus_ops->power_restore\n",__func__);
+	}
+
+	if (host->bus_dead) {
+		printk("%s: host->bus_dead\n",__func__);
+	}
+
 	if (!host->bus_ops || host->bus_dead || !host->bus_ops->power_restore) {
 		mmc_bus_put(host);
 		return -EINVAL;
@@ -1257,6 +1270,18 @@ int mmc_power_restore_host(struct mmc_host *host)
 	int ret;
 
 	mmc_bus_get(host);
+
+	if (!host->bus_ops) {
+		printk("%s: !host->bus_ops\n",__func__);
+	}
+
+	if (!host->bus_ops->power_restore) {
+		printk("%s: !host->bus_ops->power_restore\n",__func__);
+	}
+
+	if (host->bus_dead) {
+		printk("%s: host->bus_dead\n",__func__);
+	}
 
 	if (!host->bus_ops || host->bus_dead || !host->bus_ops->power_restore) {
 		mmc_bus_put(host);
