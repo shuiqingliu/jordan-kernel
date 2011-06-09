@@ -184,8 +184,7 @@ static int sdio_bus_remove(struct device *dev)
 	pm_runtime_put_noidle(dev);
 
 	/* Then undo the runtime PM settings in sdio_bus_probe() */
-	pm_runtime_put_noidle(dev);
-
+	pm_runtime_put_sync(dev);
 out:
 	return ret;
 }
