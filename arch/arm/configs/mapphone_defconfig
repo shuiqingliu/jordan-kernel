@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.32.9
-# Thu Mar  7 21:30:16 2013
+# Tue Mar 26 15:43:23 2013
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -443,7 +443,7 @@ CONFIG_QUICK_WAKEUP=y
 CONFIG_ARCH_SUSPEND_POSSIBLE=y
 CONFIG_NET=y
 
-##
+#
 # Networking options
 #
 CONFIG_PACKET=y
@@ -671,8 +671,40 @@ CONFIG_WAN_ROUTER=y
 # CONFIG_PHONET is not set
 # CONFIG_IEEE802154 is not set
 CONFIG_NET_SCHED=y
-# CONFIG_DCB is not set
 
+#
+# Queueing/Scheduling
+#
+# CONFIG_NET_SCH_CBQ is not set
+# CONFIG_NET_SCH_HTB is not set
+# CONFIG_NET_SCH_HFSC is not set
+# CONFIG_NET_SCH_PRIO is not set
+# CONFIG_NET_SCH_MULTIQ is not set
+# CONFIG_NET_SCH_RED is not set
+# CONFIG_NET_SCH_SFQ is not set
+# CONFIG_NET_SCH_TEQL is not set
+# CONFIG_NET_SCH_TBF is not set
+# CONFIG_NET_SCH_GRED is not set
+# CONFIG_NET_SCH_DSMARK is not set
+# CONFIG_NET_SCH_NETEM is not set
+# CONFIG_NET_SCH_DRR is not set
+
+#
+# Classification
+#
+# CONFIG_NET_CLS_BASIC is not set
+# CONFIG_NET_CLS_TCINDEX is not set
+# CONFIG_NET_CLS_ROUTE4 is not set
+# CONFIG_NET_CLS_FW is not set
+# CONFIG_NET_CLS_U32 is not set
+# CONFIG_NET_CLS_RSVP is not set
+# CONFIG_NET_CLS_RSVP6 is not set
+# CONFIG_NET_CLS_FLOW is not set
+# CONFIG_NET_CLS_CGROUP is not set
+# CONFIG_NET_EMATCH is not set
+# CONFIG_NET_CLS_ACT is not set
+CONFIG_NET_SCH_FIFO=y
+# CONFIG_DCB is not set
 
 #
 # Network testing
@@ -696,15 +728,13 @@ CONFIG_BT_HIDP=y
 #
 # CONFIG_BT_HCIBTUSB is not set
 # CONFIG_BT_HCIBTSDIO is not set
-CONFIG_BT_HCIUART=y
-CONFIG_BT_HCIUART_H4=y
-# CONFIG_BT_HCIUART_BCSP is not set
-CONFIG_BT_HCIUART_LL=y
+# CONFIG_BT_HCIUART is not set
 # CONFIG_BT_HCIBCM203X is not set
 # CONFIG_BT_HCIBPA10X is not set
 # CONFIG_BT_HCIBFUSB is not set
 # CONFIG_BT_HCIVHCI is not set
 # CONFIG_BT_MRVL is not set
+CONFIG_BT_WILINK=y
 # CONFIG_AF_RXRPC is not set
 CONFIG_FIB_RULES=y
 CONFIG_WIRELESS=y
@@ -927,6 +957,12 @@ CONFIG_NETMUX_DRIVER=m
 #
 CONFIG_NETMUX_LINKDRIVER=m
 CONFIG_CAMERA_MISC=y
+
+#
+# Texas Instruments shared transport line discipline
+#
+CONFIG_TI_ST=y
+CONFIG_ST_HCI=y
 CONFIG_HAVE_IDE=y
 # CONFIG_IDE is not set
 
@@ -950,7 +986,6 @@ CONFIG_DM_CRYPT=y
 # CONFIG_DM_DELAY is not set
 CONFIG_DM_UEVENT=y
 CONFIG_NETDEVICES=y
-CONFIG_IFB=m
 # CONFIG_DUMMY is not set
 # CONFIG_BONDING is not set
 # CONFIG_MACVLAN is not set
@@ -2404,7 +2439,7 @@ CONFIG_CRC16=y
 # CONFIG_CRC_T10DIF is not set
 # CONFIG_CRC_ITU_T is not set
 CONFIG_CRC32=y
-# CONFIG_CRC7 is not set
+CONFIG_CRC7=m
 CONFIG_LIBCRC32C=y
 CONFIG_ZLIB_INFLATE=y
 CONFIG_ZLIB_DEFLATE=y

@@ -56,7 +56,10 @@
 #include <plat/hdq.h>
 #include <mach/system.h>
 #include <linux/wakelock.h>
-
+#ifdef CONFIG_ST_HCI
+#include <linux/ti_wilink_st.h>
+#include <linux/skbuff.h>
+#endif
 #include "cm-regbits-34xx.h"
 
 #ifdef CONFIG_ARM_OF
@@ -130,6 +133,8 @@
 #define MAPPHONE_BPWAKE_STROBE_GPIO	157
 #define MAPPHONE_APWAKE_TRIGGER_GPIO	141
 #define MAPPHONE_AIRC_INT_GPIO        180
+#define MAPPHONE_BT_RESET_GPIO 21 //get_gpio_by_name("bt_reset_b")
+#define WILINK_UART_DEV_NAME "/dev/ttyS1"
 
 #define MAPPHONE_MMCPROBE_ENABLED 0
 
@@ -2252,153 +2257,29 @@ static int __init omap_hdq_init(void)
 	return platform_device_register(&omap_hdq_device);
 }
 
-static int mapphone_wl1271_init(void);
-static int mapphone_wl1271_release(void);
-static int mapphone_wl1271_enable(void);
-static int mapphone_wl1271_disable(void);
-
-static struct wl127x_rfkill_platform_data mapphone_wl1271_pdata = {
-	.bt_nshutdown_gpio = -1,
-	.pwr_ctl = -1,
-	.fm_enable_gpio = -1,
-	.bt_hw_init = mapphone_wl1271_init,
-	.bt_hw_release = mapphone_wl1271_release,
-	.bt_hw_enable = mapphone_wl1271_enable,
-	.bt_hw_disable = mapphone_wl1271_disable,
+/* wl127x BT, FM, GPS connectivity chip */
+struct ti_st_plat_data wilink_pdata = {
+	.nshutdown_gpio = MAPPHONE_BT_RESET_GPIO, 
+	.dev_name = WILINK_UART_DEV_NAME,
+	.flow_cntrl = 1,
+	.baud_rate = 3686400,
+	.suspend = 0,
+	.resume = 0,
+};
+static struct platform_device wl127x_device = {
+	.name           = "kim",
+	.id             = -1,
+	.dev.platform_data = &wilink_pdata,
+};
+static struct platform_device btwilink_device = {
+	.name = "btwilink",
+	.id = -1,
 };
 
-static struct wl127x_test_platform_data mapphone_wl1271_test_pdata;
-
-#define is_BTWAKE_present() (mapphone_wl1271_test_pdata.btwake_gpio >= 0)
-#define is_BTHOSTWAKE_present() (mapphone_wl1271_test_pdata.hostwake_gpio >= 0)
-
-static int mapphone_wl1271_init(void)
-{
-	int rc = 0;
-
-	/* wl1271 BT chip init sequence */
-	gpio_direction_output(mapphone_wl1271_pdata.bt_nshutdown_gpio, 0);
-	msleep(5);
-	gpio_set_value(mapphone_wl1271_pdata.bt_nshutdown_gpio, 1);
-	msleep(10);
-	gpio_set_value(mapphone_wl1271_pdata.bt_nshutdown_gpio, 0);
-	msleep(5);
-
-	/* Reserve BT wake and hostwake GPIOs */
-	if (is_BTWAKE_present()) {
-		rc = gpio_request(mapphone_wl1271_test_pdata.btwake_gpio,
-					"wl127x_wake_gpio");
-		if (unlikely(rc))
-			return rc;
-	}
-
-	if (is_BTHOSTWAKE_present()) {
-		rc = gpio_request(mapphone_wl1271_test_pdata.hostwake_gpio,
-					"wl127x_hostwake_gpio");
-		if (unlikely(rc))
-			return rc;
-	}
-
-	if (is_BTWAKE_present())
-		gpio_direction_output(mapphone_wl1271_test_pdata.btwake_gpio,
-					1);
-	if (is_BTHOSTWAKE_present())
-		gpio_direction_input(mapphone_wl1271_test_pdata.hostwake_gpio);
-
-	return 0;
-}
-
-static int mapphone_wl1271_release(void)
-{
-	if (is_BTWAKE_present())
-		gpio_free(mapphone_wl1271_test_pdata.btwake_gpio);
-
-	if (is_BTHOSTWAKE_present())
-		gpio_free(mapphone_wl1271_test_pdata.hostwake_gpio);
-
-	return 0;
-}
-
-static int mapphone_wl1271_enable(void)
-{
-	/* FIXME
-	 * Change vio mode dynamically if necessary
-	 */
-	change_vio_mode(0, 1);
-	return 0;
-}
-
-static int mapphone_wl1271_disable(void)
-{
-	/* FIXME
-	 * Change vio mode dynamically if necessary
-	 */
-	change_vio_mode(0, 0);
-	return 0;
-}
-
-static struct platform_device mapphone_wl1271_device = {
-	.name = "wl127x-rfkill",
-	.id = 0,
-	.dev.platform_data = &mapphone_wl1271_pdata,
+static struct platform_device *mapphone_devices[] __initdata = {
+	&wl127x_device,
+	&btwilink_device,
 };
-
-static struct platform_device mapphone_wl1271_test_device = {
-	.name = "wl127x-test",
-	.id = 0,
-	.dev.platform_data = &mapphone_wl1271_test_pdata,
-};
-
-static void __init mapphone_bt_init(void)
-{
-#ifdef CONFIG_ARM_OF
-	int bt_enable_gpio;
-	int bt_wake_gpio;
-	int bt_host_wake_gpio;
-
-	bt_enable_gpio = get_gpio_by_name("bt_reset_b");
-	if (bt_enable_gpio < 0) {
-		printk(KERN_DEBUG "mapphone_bt_init: cannot retrieve bt_reset_b gpio from device tree\n");
-		bt_enable_gpio = -1;
-	}
-	mapphone_wl1271_pdata.bt_nshutdown_gpio = bt_enable_gpio;
-
-	/* if no DC-DC converter, expose rfkill */
-	if (!is_cpcap_vio_supply_converter()) {
-		printk(KERN_DEBUG "mapphone_bt_init: misc_cpcap not null\n");
-		mapphone_wl1271_pdata.pwr_ctl = 1;
-	}
-
-	bt_wake_gpio = get_gpio_by_name("bt_wake_b");
-	if (bt_wake_gpio < 0) {
-		printk(KERN_DEBUG "mapphone_bt_init: cannot retrieve bt_wake_b gpio from device tree\n");
-		bt_wake_gpio = -1;
-	}
-	mapphone_wl1271_test_pdata.btwake_gpio = bt_wake_gpio;
-
-	bt_host_wake_gpio = get_gpio_by_name("bt_host_wake_b");
-	if (bt_host_wake_gpio < 0) {
-		printk(KERN_DEBUG "mapphone_bt_init: cannot retrieve bt_host_wake_b gpio from device tree\n");
-		bt_host_wake_gpio = -1;
-	}
-	mapphone_wl1271_test_pdata.hostwake_gpio = bt_host_wake_gpio;
-#endif
-
-	/* The 3 mux settings below are default; device tree will overwrite */
-
-	/* Mux setup for Bluetooth chip-enable */
-	omap_cfg_reg(T3_34XX_GPIO179);
-
-	/* Mux setup for BT wake GPIO and hostwake GPIO */
-	if (is_BTWAKE_present())
-		omap_cfg_reg(AF21_34XX_GPIO8_OUT);
-	if (is_BTHOSTWAKE_present())
-		omap_cfg_reg(W7_34XX_GPIO178_DOWN);
-
-	platform_device_register(&mapphone_wl1271_device);
-	platform_device_register(&mapphone_wl1271_test_device);
-}
-
 
 static struct omap_vout_config mapphone_vout_platform_data = {
 	.max_width = 1280,
@@ -2617,7 +2498,7 @@ static void __init mapphone_init(void)
 	config_mmc2_init();
 	config_wlan_gpio();
 	omap_hdq_init();
-	mapphone_bt_init();
+	platform_add_devices(mapphone_devices, ARRAY_SIZE(mapphone_devices));
 #ifdef mapphone_MMCPROBE_ENABLED
 	mapphone_mmcprobe_init();
 #else
