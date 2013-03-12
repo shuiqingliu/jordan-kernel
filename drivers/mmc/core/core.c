@@ -1193,9 +1193,6 @@ void mmc_stop_host(struct mmc_host *host)
 		wake_unlock(&mmc_delayed_work_wake_lock);
 	mmc_flush_scheduled_work();
 
-	/* clear pm flags now and let card drivers set them as needed */
-	host->pm_flags = 0;
-
 	mmc_bus_get(host);
 	if (host->bus_ops && !host->bus_dead) {
 		if (host->bus_ops->remove)
@@ -1315,7 +1312,7 @@ int mmc_suspend_host(struct mmc_host *host, pm_message_t state)
 	}
 	mmc_bus_put(host);
 
-	if (!err && !(host->pm_flags & MMC_PM_KEEP_POWER))
+	if (!err)
 		mmc_power_off(host);
 
 	return err;
@@ -1339,10 +1336,8 @@ int mmc_resume_host(struct mmc_host *host)
 	}
 
 	if (host->bus_ops && !host->bus_dead) {
-		if (!(host->pm_flags & MMC_PM_KEEP_POWER)) {
-			mmc_power_up(host);
-			mmc_select_voltage(host, host->ocr);
-		}
+		mmc_power_up(host);
+		mmc_select_voltage(host, host->ocr);
 		BUG_ON(!host->bus_ops->resume);
 		err = host->bus_ops->resume(host);
 		if (err) {
