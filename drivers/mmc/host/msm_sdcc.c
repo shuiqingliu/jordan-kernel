@@ -1216,11 +1216,16 @@ msmsdcc_suspend(struct platform_device *dev, pm_message_t state)
 			disable_irq(host->stat_irq);
 
 		if (mmc->card && mmc->card->type != MMC_TYPE_SDIO)
-			rc = mmc_suspend_host(mmc);
-		if (!rc)
-			msmsdcc_writel(host, 0, MMCIMASK0);
-		if (host->clks_on)
-			msmsdcc_disable_clocks(host, 0);
+			rc = mmc_suspend_host(mmc, state);
+		if (!rc) {
+			writel(0, host->base + MMCIMASK0);
+
+			if (host->clks_on) {
+				clk_disable(host->clk);
+				clk_disable(host->pclk);
+				host->clks_on = 0;
+			}
+		}
 	}
 	return rc;
 }
