@@ -292,7 +292,6 @@ int mmc_add_card(struct mmc_card *card)
 			mmc_card_highspeed(card) ? "high speed " : "",
 			type, card->rca);
 	}
-	mmc_card_set_inserted(card);
 
 	ret = device_add(&card->dev);
 	if (ret)
@@ -325,7 +324,6 @@ void mmc_remove_card(struct mmc_card *card)
 			printk(KERN_INFO "%s: card %04x removed\n",
 				mmc_hostname(card->host), card->rca);
 		}
-		card->state &= ~MMC_STATE_INSERTED;
 		device_del(&card->dev);
 	}
 
